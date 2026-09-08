@@ -10,9 +10,16 @@ endif ()
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/FetchDusklight.cmake")
 add_subdirectory("${DUSKLIGHT_DIR}/sdk" dusklight-sdk EXCLUDE_FROM_ALL)
 
+set(SOURCE_FILES
+        src/rush.cpp
+        src/hooks.cpp
+        src/timer.cpp
+        src/ui.cpp
+)
+
 add_mod(dungeon_rush
         FEATURES game fmt
-        SOURCES src/mod.cpp
+        SOURCES src/mod.cpp ${SOURCE_FILES}
         MOD_JSON mod.json
         RES_DIR res
 )

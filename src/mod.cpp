@@ -1,46 +1,64 @@
-#include "mods/hook.hpp"
 #include "mods/service.hpp"
 #include "mods/svc/hook.h"
 #include "mods/svc/log.h"
+#include "mods/svc/ui.h"
+#include "mods/svc/resource.h"
 
-// Game includes
-#include "d/d_item_data.h"
-#include "f_op/f_op_actor_mng.h"
+#include <mods/svc/log.hpp>
+
+#include "timer.hpp"
+#include "hooks.hpp"
+#include "rush.hpp"
+#include "ui.hpp"
+
+#include "m_Do/m_Do_controller_pad.h"
 
 DEFINE_MOD();
-
 IMPORT_SERVICE(LogService, svc_log);
 IMPORT_SERVICE(HookService, svc_hook);
-
-// Example game hook: turn heart drops into green rupees.
-DEFINE_HOOK(fopAcM_createItem, CreateItem);
-
-static HookAction on_create_item_pre(ModContext*, void* args, void*, void*) {
-    int& itemNo = mods::arg_ref<int>(args, 1);
-    if (itemNo == dItemNo_HEART_e) {
-        itemNo = dItemNo_GREEN_RUPEE_e;
-    }
-    return HOOK_CONTINUE;
-}
+IMPORT_SERVICE(UiService, svc_ui);
+IMPORT_SERVICE(ResourceService, svc_resource);
+IMPORT_SERVICE(ConfigService, svc_config);
 
 extern "C" {
-MOD_EXPORT ModResult mod_initialize(ModError*) {
-    // Installs a pre hook on fopAcM_createItem.
-    ModResult result = mods::hook_add_pre<CreateItem>(svc_hook, on_create_item_pre);
-    if (result != MOD_OK) {
-        svc_log->error(mod_ctx, "failed to install on_create_item_pre");
-        return result;
+MOD_EXPORT ModResult mod_initialize(ModError* error) {
+    ModResult rt = rush::game::cvarRegisterBestTimes(error);
+    if (rt != MOD_OK) {
+        return rt;
     }
 
-    svc_log->info(mod_ctx, "my_mod initialized");
+    rt = rush::hooks::install();
+    if (rt != MOD_OK) {
+        return rt;
+    }
+
+    mods::log::info("dungeon rush mod initialized");
     return MOD_OK;
 }
 
 MOD_EXPORT ModResult mod_update(ModError*) {
+    if (mDoCPd_c::getHoldR(PAD_1) && mDoCPd_c::getTrigB(PAD_1)) {
+        rush::ui::displayWindow();
+    }
+
+    if (rush::game::s_runState == rush::game::RUN_START_e) {
+        rush::game::checkDungeonTransition();
+    }
+
     return MOD_OK;
 }
 
 MOD_EXPORT ModResult mod_shutdown(ModError*) {
+    rush::timer::g_rush_timer.delete_();
+
+    rush::game::g_cvarTotalTime = 0;
+    for (auto& handle : rush::game::g_cvarSplitTimestamps) {
+        handle = 0;
+    }
+
+    rush::hooks::uninstall();
+
+    mods::log::info("dungeon rush mod unloaded");
     return MOD_OK;
 }
 }
