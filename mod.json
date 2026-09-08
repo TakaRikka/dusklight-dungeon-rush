@@ -1,7 +1,7 @@
 {
-  "id": "com.example.my_mod",
-  "name": "My Mod",
+  "id": "dev.takarikka.dungeon_rush",
+  "name": "Dungeon Rush",
   "version": "1.0.0",
-  "author": "You",
-  "description": "An example Dusklight mod"
+  "author": "Taka",
+  "description": "Dusklight Dungeon Rush"
 }
